@@ -80,10 +80,14 @@ class emailRobot():
    def saveFile(self, fileData, callsign):
        cabFilter = CabrilloFilter()
        logcall=cabFilter.stripCallsign(callsign)
-       filename= logready+logcall.upper()+'.LOG'
-       #print(f'filename={filename}')
-       with open(filename, 'w') as f:
-           f.write(fileData)
+       if len(logcall)>=3:
+           filename= logready+logcall.upper()+'.LOG'
+           #print(f'filename={filename}')
+           with open(filename, 'w') as f:
+               f.write(fileData)
+       else:
+           print('*** No callsign in CABRILLO header ***')
+           filename = None
        return filename
 
    def processFile(self, att):
@@ -122,7 +126,7 @@ class emailRobot():
                        files.append(att.filename)
                        # Process file here
                        logHead, fileName = self.processFile(att)
-                       if logHead:
+                       if logHead and fileName:
                            filefmt="Cabrillo "
                            status = True
                        else:
