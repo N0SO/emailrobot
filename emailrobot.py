@@ -88,6 +88,7 @@ class emailRobot():
 
    def processFile(self, att):
        logHeader = None
+       fileName = None
        if att.content_type == 'application/octet-stream':
            cabFilter = CabrilloFilter()
            logdata=att.payload
@@ -96,8 +97,8 @@ class emailRobot():
            logdict = cabFilter.main(logdata)
            if "HEADER" in logdict:
                logHeader = logdict["HEADER"]
-               self.saveFile(logdata,logHeader['CALLSIGN'])
-       return logHeader
+               fileName = self.saveFile(logdata,logHeader['CALLSIGN'])
+       return logHeader, fileName
 
    def main(self):
        status = False
@@ -120,7 +121,7 @@ class emailRobot():
                    for att in msg.attachments:
                        files.append(att.filename)
                        # Process file here
-                       logHead = self.processFile(att)
+                       logHead, fileName = self.processFile(att)
                        if logHead:
                            filefmt="Cabrillo "
                            status = True
@@ -128,10 +129,13 @@ class emailRobot():
                            filefmt="*** NOT Cabrillo ***"
                            status = False
                        print(f'Attachment {atcount}: Name:{att.filename}, type: {att.content_type}, {filefmt} file') 
-                      
+                       if fileName:
+                           print(f'Attachemnt {atcount} saved as {fileName}.')
+                       else:
+                           print(f'Attachment {atcount} *** NOT SAVED ***, check original e-mail message.')
                        atcount += 1
                else:
-                   print('*** No attachments ***')
+                   print('*** No attachments, nothing saved ***')
                    status = False
                if status:
                    print('+++ Log Entry Accepted +++')
