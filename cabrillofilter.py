@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, shutil, datetime
 from robotconfig import *
 from robotmail import *
@@ -8,7 +8,7 @@ cabrillofilter.py - Parse a text file to determine if it meets
                     ARRL CABRILLO Format log file. If so, extract 
                     the CALL, NAME, ADDRESS, etc.
 """
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 class CabrilloFilter(CabrilloUtils):
     def __init__(self, log=None, path=None):

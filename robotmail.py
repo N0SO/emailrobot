@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import smtplib, email, datetime, string
 from email.mime.text import MIMEText
 from robotconfig import *
@@ -126,7 +126,7 @@ The MOQP Log Contest Robot"""
          smtpObj.login(imap_user, imap_pass)
          smtpObj.sendmail(sender, to, msg.as_string())         
       except:
-         print "Error: unable to send email"
+         print("Error: unable to send email")
 
 if __name__=='__main__':
     app = robotMail(ROBOTSENDER, "mikeheit@aol.com","TEST MESSAGE","This is a test message")
