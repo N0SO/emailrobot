@@ -23,7 +23,6 @@ Update History:
 
 """
 from imap_tools import MailBox, AND
-#import getpass, imaplib, smtplib, os, email, string, datetime
 import pymysql, datetime
 from robotconfig import *
 from cabrillofilter import *
@@ -49,28 +48,37 @@ class emailRobot():
       return self.VERSION
       
       
-   def createDBEntry(self, status, msgparts, logdict):
-       cnx = mysql.connector.connect(user=dbusername, password=dbpassword, 
-                                     host=dbhostname, database=dbname)
+   def createDBEntry(self, status, msgparts, logdict, filename):
+       cnx = pymysql.connect(user=dbusername, password=dbpassword, 
+                             host=dbhostname, database=dbname)
        timestring = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S")
-       curser=cnx.cursor(prepared=True)
-       query = """INSERT INTO logs_received 
-                            (STA_CALL,
-	      					 OP_NAME,
-	      					 EMAIL,
+       if msgparts.reply_to:
+           email = msgparts.reply_to
+       else:
+           email = msgparts.from_
+
+       if 'WEB' in msgparts.subject:
+           rcvd_by = 'WEB'
+       else:
+           rcvd_by = 'EMAIL'
+
+       curser=cnx.cursor()
+       query = """INSERT INTO logs_received (STA_CALL,
+	      			             OP_NAME,
+	      			             EMAIL,
 	                         RECEIVED_BY,
 	                         FILENAME,
 	                         DATE_REC,
 	                         EMAILSUBJ)	
 	       
 	             VALUES (%s,%s,%s,%s,%s,%s,%s)"""
-       params = (logdict['HEADER']['CALLSIGN'],
-	            logdict['HEADER']['NAME'],
-	            msgparts['replyto'],
-	            msgparts['method'],
-	            msgparts['fname'],
+       params = (logdict['CALLSIGN'],
+	            logdict['NAME'],
+	            email,
+	            rcvd_by,
+	            filename,
 	            timestring,
-	            msgparts['subject'])
+	            msgparts.subject)
 	                    
        #print('query = %s'%(query))
        curser.execute(query, params)
@@ -102,6 +110,7 @@ class emailRobot():
            if "HEADER" in logdict:
                logHeader = logdict["HEADER"]
                fileName = self.saveFile(logdata,logHeader['CALLSIGN'])
+               
        return logHeader, fileName
 
    def main(self):
@@ -137,6 +146,7 @@ class emailRobot():
                            print(f'Attachemnt {atcount} saved as {fileName}.')
                        else:
                            print(f'Attachment {atcount} *** NOT SAVED ***, check original e-mail message.')
+                       self.createDBEntry(status, msg, logHead, fileName)
                        atcount += 1
                else:
                    print('*** No attachments, nothing saved ***')
