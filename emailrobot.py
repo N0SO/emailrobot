@@ -78,7 +78,13 @@ class emailRobot():
        cnx.close()
 
    def saveFile(self, fileData, callsign):
-       pass
+       cabFilter = CabrilloFilter()
+       logcall=cabFilter.stripCallsign(callsign)
+       filename= logready+logcall.upper()+'.LOG'
+       #print(f'filename={filename}')
+       with open(filename, 'w') as f:
+           f.write(fileData)
+       return filename
 
    def processFile(self, att):
        logHeader = None
@@ -94,6 +100,7 @@ class emailRobot():
        return logHeader
 
    def main(self):
+       status = False
        #mailSender = robotMail() # For sending results to recipients and 
        with MailBox(imap_host, port=993).login(\
                       imap_user, 
@@ -127,7 +134,7 @@ class emailRobot():
                    print('*** No attachments ***')
                    status = False
                if status:
-                   print('=== Log Entry Accepted ===')
+                   print('+++ Log Entry Accepted +++')
                else:
                    print('*** Log Entry REJECTED ***')
 
