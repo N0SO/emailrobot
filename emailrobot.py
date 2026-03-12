@@ -13,6 +13,14 @@ This script is intended to be called from the cron daemon to periodically
 check for new logs, but could be triggered from a web browser as well.
 
 Update History:
+* Wed Mar 11 2026 Mike Heitmann, N0SO <n0so@arrl.net>
+- V3.0.0 - Updated for Python3. The W0MA.ORG ISP updated
+-          our server. Generally a good thing, but it
+-          broke this e-mail robot. It turned out to be a
+-          good thing by giving us access to python3. So
+-          we refactored the code for python3. It's a little
+-          easier to follow than it was, and is definately more
+-          efficient.
 * Sat Mar 26 2022 Mike Heitmann, N0SO <n0so@arrl.net>
 - V2.0.0 - Support for Python SQL functions added to w0ma.org server.
 -          This app was refactored to eliminate the need for calling
@@ -26,17 +34,8 @@ from imap_tools import MailBox, AND
 import pymysql, datetime
 from robotconfig import *
 from cabrillofilter import *
-#from cabrillolog import logfile
-#from robotmail import *
-#from email.mime.text import MIMEText
 
 VERSION = '3.0.0'
-ERRORINLOG = "Error! attached log is NOT a plain text file!"
-CTYPES = ['text/x-log',
-          'application/octet-stream',
-          'text/plain','application/pdf',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
 
 class emailRobot():
 
@@ -48,10 +47,11 @@ class emailRobot():
       return self.VERSION
       
       
-   def createDBEntry(self, status, msgparts, logdict, filename):
-       cnx = pymysql.connect(user=dbusername, password=dbpassword, 
-                             host=dbhostname, database=dbname)
+   def createDBEntry(self, att_num, msgparts, logdict, filename):
+       #Get current time stamp
        timestring = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S")
+
+       #Get parts of the e-mail we want saved
        if msgparts.reply_to:
            email = msgparts.reply_to
        else:
@@ -62,6 +62,15 @@ class emailRobot():
        else:
            rcvd_by = 'EMAIL'
 
+       
+       #Get station call from log and strip off /M, /R, etc 
+       cabFilter = CabrilloFilter()
+       stacall=cabFilter.stripCallsign(logdict["CALLSIGN"])
+       stacall = stacall.upper()
+
+       #Write to database
+       cnx = pymysql.connect(user=dbusername, password=dbpassword, 
+                             host=dbhostname, database=dbname)
        curser=cnx.cursor()
        query = """INSERT INTO logs_received (STA_CALL,
 	      			             OP_NAME,
@@ -69,16 +78,18 @@ class emailRobot():
 	                         RECEIVED_BY,
 	                         FILENAME,
 	                         DATE_REC,
-	                         EMAILSUBJ)	
+	                         EMAILSUBJ,
+                                 ATT_NUM)	
 	       
-	             VALUES (%s,%s,%s,%s,%s,%s,%s)"""
-       params = (logdict['CALLSIGN'],
+	             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"""
+       params = (  stacall,
 	            logdict['NAME'],
 	            email,
 	            rcvd_by,
 	            filename,
 	            timestring,
-	            msgparts.subject)
+	            msgparts.subject,
+                    att_num)
 	                    
        #print('query = %s'%(query))
        curser.execute(query, params)
@@ -138,6 +149,7 @@ class emailRobot():
                        if logHead and fileName:
                            filefmt="Cabrillo "
                            status = True
+                           self.createDBEntry(atcount, msg, logHead, fileName)
                        else:
                            filefmt="*** NOT Cabrillo ***"
                            status = False
@@ -146,7 +158,6 @@ class emailRobot():
                            print(f'Attachemnt {atcount} saved as {fileName}.')
                        else:
                            print(f'Attachment {atcount} *** NOT SAVED ***, check original e-mail message.')
-                       self.createDBEntry(status, msg, logHead, fileName)
                        atcount += 1
                else:
                    print('*** No attachments, nothing saved ***')
