@@ -1,0 +1,5 @@
+#!/bin/bash
+cd /home/w0ma/moqputils
+source .venv/bin/activate
+cd emailrobot
+./logrobot
