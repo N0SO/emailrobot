@@ -30,12 +30,12 @@ Update History:
 -          of excel and pdf docs.
 
 """
+VERSION = '3.0.0'
+
 from imap_tools import MailBox, AND
 import pymysql, datetime
 from robotconfig import *
 from cabrillofilter import *
-
-VERSION = '3.0.0'
 
 class emailRobot():
 
